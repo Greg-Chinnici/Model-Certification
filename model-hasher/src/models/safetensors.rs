@@ -118,7 +118,7 @@ pub fn verify_and_print_tensors(tensors: &HashMap<String, TensorMeta>) {
         println!("  actual bytes: {}", actual_bytes);
         println!(
             "  VALID: {}\n",
-            if expected_bytes == actual_bytes { "good file" } else { "bad file" }
+            if expected_bytes == actual_bytes { "good section" } else { "bad section" }
         );
     }
 }

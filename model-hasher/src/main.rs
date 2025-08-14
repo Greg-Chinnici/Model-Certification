@@ -80,7 +80,7 @@ fn main() -> anyhow::Result<()>{
         args = args.merge_with_config(config);
     }
 
-    // Each line of the file is an absilute path to a weight file
+    // Each line of the file is an absolute path to a weight file
     println!("Model List {}", args.model_list_file);
     let file = File::open(args.model_list_file)?;
     let reader = BufReader::new(file);
@@ -91,8 +91,12 @@ fn main() -> anyhow::Result<()>{
                 _ => None,
             })
             .collect();
-
+    // make an iter to go for all paths, just testing a single file now
     let model: SafetensorsShard = SafetensorsShard::open(paths.first().unwrap())?;
+
+    // Hash metadata to Check for Shape changes. this is the most egregious and obvious way to alter a model
+    //
+
 
     if let Some(path) = args.output_file {
         fs::write(path, "json output")?;
