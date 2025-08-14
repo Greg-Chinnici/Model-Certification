@@ -1,15 +1,19 @@
 use crate::modelshard::{ModelShard , TensorMeta};
+use crate::generators::{fibonacci::Fibonacci};
+
 use anyhow::Result;
 use std::{fs::File, path::Path};
 use memmap2::Mmap;
-use serde_json::Value;
 use safetensors::{self, SafeTensors, tensor::Metadata , tensor::Dtype};
-use std::collections::HashMap;
+
+// Use BTree so it can keep order, without needing to resort after read in
+// normal hashmaps dont guarentee order
+use std::collections::BTreeMap;
 
 pub struct SafetensorsShard {
     path: String,
     data_start: u64,
-    tensors: HashMap<String, TensorMeta>,
+    tensors: BTreeMap<String, TensorMeta>,
     mmap: Mmap,
 }
 
@@ -38,14 +42,14 @@ impl ModelShard for SafetensorsShard {
         }
 
         println!("Tensors in file:");
-        let tensors: HashMap<String, TensorMeta> = metadata
+        let mut tensors: BTreeMap<String, TensorMeta> = metadata
                 .tensors()
                 .iter()
                 .map(|(name, info)| {
-                    println!("Tensor: {}", name);
-                    println!("  dtype: {:?}", info.dtype);
-                    println!("  shape: {:?}", info.shape);
-                    println!("  data_offsets: {:?}", info.data_offsets);
+                    //println!("Tensor: {}", name);
+                    //println!("  dtype: {:?}", info.dtype);
+                    //println!("  shape: {:?}", info.shape);
+                    //println!("  data_offsets: {:?}", info.data_offsets);
                     (
                         name.clone(),
                         TensorMeta {
@@ -56,6 +60,10 @@ impl ModelShard for SafetensorsShard {
                     )
                 })
                 .collect();
+
+        // Need to sort the keys, for now it is not dterminsitc
+        // rust hashmaps cant be directly sorted, os maybe use a similar structure
+        // workaround for now could be to hash each tensor then sort those hashes then flatten them into 1 hash
 
         verify_and_print_tensors(&tensors);
 
@@ -75,7 +83,7 @@ impl ModelShard for SafetensorsShard {
 
     fn tensors(&self) -> &[TensorMeta]{unimplemented!()}
     /// Absolute offset of the shard's data section start
-    fn data_section_start(&self) -> u64 {unimplemented!()}
+    fn data_section_start(&self) -> u64 {self.data_start}
     fn mmap(&self) -> Result<&memmap2::Mmap> {unimplemented!()}
 }
 
@@ -93,7 +101,7 @@ fn dtype_size_bytes(dtype: Dtype) -> Option<usize> {
     }
 }
 
-pub fn verify_and_print_tensors(tensors: &HashMap<String, TensorMeta>) {
+pub fn verify_and_print_tensors(tensors: &BTreeMap<String, TensorMeta>) {
     for (name, meta) in tensors {
         let elem_size = match dtype_size_bytes(meta.dtype) {
             Some(sz) => sz,

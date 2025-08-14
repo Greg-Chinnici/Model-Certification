@@ -11,6 +11,7 @@ use crate::modelshard::ModelShard;
 mod fingerprint;
 mod modelshard;
 mod models;
+mod generators;
 mod utils;
 
 #[derive(Parser)]
