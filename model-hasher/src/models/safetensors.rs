@@ -57,6 +57,10 @@ impl ModelShard for SafetensorsShard {
                 })
                 .collect();
 
+        verify_and_print_tensors(&tensors);
+
+        println!("There are {} different tensors", tensors.len());
+
         Ok(Self {
             path: path.to_string_lossy().into_owned(),
             data_start: 8 + header_size as u64,
@@ -73,4 +77,48 @@ impl ModelShard for SafetensorsShard {
     /// Absolute offset of the shard's data section start
     fn data_section_start(&self) -> u64 {unimplemented!()}
     fn mmap(&self) -> Result<&memmap2::Mmap> {unimplemented!()}
+}
+
+fn dtype_size_bytes(dtype: Dtype) -> Option<usize> {
+    match dtype {
+        Dtype::F64 => Some(8),
+        Dtype::F32 => Some(4),
+        Dtype::F16 | Dtype::BF16 => Some(2),
+        Dtype::I64 | Dtype::U64 => Some(8),
+        Dtype::I32 | Dtype::U32 => Some(4),
+        Dtype::I16 | Dtype::U16 => Some(2),
+        Dtype::I8  | Dtype::U8  => Some(1),
+        Dtype::BOOL => Some(1),
+        _ => None, // In case new dtypes are added
+    }
+}
+
+pub fn verify_and_print_tensors(tensors: &HashMap<String, TensorMeta>) {
+    for (name, meta) in tensors {
+        let elem_size = match dtype_size_bytes(meta.dtype) {
+            Some(sz) => sz,
+            None => {
+                println!("Tensor: {} has unsupported dtype: {:?}", name, meta.dtype);
+                continue;
+            }
+        };
+
+        let num_elements: usize = meta.shape.iter().product();
+        let expected_bytes = num_elements * elem_size;
+
+        let (start, end) = meta.data_offsets;
+        let actual_bytes = (end - start) as usize;
+
+        println!("Tensor: {}", name);
+        println!("  dtype: {:?}", meta.dtype);
+        println!("  shape: {:?}", meta.shape);
+        println!("  elements: {}", num_elements);
+        println!("  bytes per element: {}", elem_size);
+        println!("  expected bytes: {}", expected_bytes);
+        println!("  actual bytes: {}", actual_bytes);
+        println!(
+            "  VALID: {}\n",
+            if expected_bytes == actual_bytes { "good file" } else { "bad file" }
+        );
+    }
 }
