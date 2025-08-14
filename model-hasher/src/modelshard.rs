@@ -1,11 +1,13 @@
 use std::path::Path;
 use anyhow::Result;
+use safetensors::{tensor::Dtype};
+
 
 #[derive(Clone, Debug)]
 pub struct TensorMeta {
-    pub name: String,
-    pub start: u64, // byte offset in file's data section
-    pub len: u64,   // byte length of tensor
+    pub dtype: Dtype,
+    pub shape: Vec<usize>,
+    pub data_offsets: (usize, usize),
 }
 
 

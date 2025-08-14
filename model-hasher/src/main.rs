@@ -1,7 +1,12 @@
 use clap::Parser;
-use std::fs;
+use std::{fs::File, path::PathBuf, fs};
+use std::io::{self, BufRead, BufReader};
+
 use serde_json;
 use serde::Deserialize;
+
+use crate::models::safetensors::SafetensorsShard;
+use crate::modelshard::ModelShard;
 
 mod fingerprint;
 mod modelshard;
@@ -34,8 +39,8 @@ struct Cli {
     samples: usize,
 
     /// Config and Output
-    #[arg(long)]
-    config: Option<String>,
+    #[arg(long="config-file")]
+    config_file: Option<String>,
 
     #[arg(long)] // all the parameters as above but in a json file
     output_file: Option<String>,
@@ -69,13 +74,25 @@ impl Cli {
 
 fn main() -> anyhow::Result<()>{
     let mut args = Cli::parse();
-    if let Some(config_path) = &args.config {
+    if let Some(config_path) = &args.config_file {
         let json: String = fs::read_to_string(config_path)?;
         let config: Config = serde_json::from_str(&json)?;
         args = args.merge_with_config(config);
     }
 
+    // Each line of the file is an absilute path to a weight file
+    println!("Model List {}", args.model_list_file);
+    let file = File::open(args.model_list_file)?;
+    let reader = BufReader::new(file);
+    let paths: Vec<PathBuf> = reader
+            .lines()
+            .filter_map(|line| match line {
+                Ok(s) if !s.trim().is_empty() => Some(PathBuf::from(s.trim())),
+                _ => None,
+            })
+            .collect();
 
+    let model: SafetensorsShard = SafetensorsShard::open(paths.first().unwrap())?;
 
     if let Some(path) = args.output_file {
         fs::write(path, "json output")?;

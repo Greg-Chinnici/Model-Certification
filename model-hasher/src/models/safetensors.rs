@@ -1,41 +1,66 @@
-use crate::modelshard::{ModelShard, TensorMeta};
+use crate::modelshard::{ModelShard , TensorMeta};
 use anyhow::Result;
 use std::{fs::File, path::Path};
 use memmap2::Mmap;
 use serde_json::Value;
+use safetensors::{self, SafeTensors, tensor::Metadata , tensor::Dtype};
+use std::collections::HashMap;
 
 pub struct SafetensorsShard {
     path: String,
     data_start: u64,
-    tensors: Vec<TensorMeta>,
+    tensors: HashMap<String, TensorMeta>,
     mmap: Mmap,
 }
+
+/*
+pub struct TensorMeta {
+    dtype: Dtype,
+    shape: Vec<usize>,
+    data_offsets: (usize, usize),
+}
+*/
 
 impl ModelShard for SafetensorsShard {
 
     fn open(path: &Path) -> Result<Self> {
-       let file = File::open(path)?;
-       let mmap = unsafe { Mmap::map(&file)? };
-       let header_len = u64::from_le_bytes(mmap[0..8].try_into()?);
-       let header_json = &mmap[8..8 + header_len as usize];
-       let parsed: Value = serde_json::from_slice(header_json)?;
+        let file = File::open(path)?;
+        let mmap = unsafe { Mmap::map(&file)? };
 
-       let mut tensors = Vec::new();
-       for (name , meta) in parsed.as_object().unwrap() {
-            let offsets = meta["data_offsets"].as_array().unwrap();
-            let start = offsets[0].as_u64().unwrap();
-            let end = offsets[1].as_u64().unwrap();
-            tensors.push(TensorMeta {
-                name: name.clone(),
-                start,
-                len: end - start,
-            });
+        let (header_size , metadata): (usize, Metadata) = SafeTensors::read_metadata(&mmap)?;
+        if let Some(meta_map) = metadata.metadata() {
+            println!("__metadata__ entries:");
+            for (k, v) in meta_map.iter() {
+                println!("  {}: {}", k, v);
+            }
+        } else {
+            println!("No __metadata__ present in header.");
         }
+
+        println!("Tensors in file:");
+        let tensors: HashMap<String, TensorMeta> = metadata
+                .tensors()
+                .iter()
+                .map(|(name, info)| {
+                    println!("Tensor: {}", name);
+                    println!("  dtype: {:?}", info.dtype);
+                    println!("  shape: {:?}", info.shape);
+                    println!("  data_offsets: {:?}", info.data_offsets);
+                    (
+                        name.clone(),
+                        TensorMeta {
+                            dtype: info.dtype,
+                            shape: info.shape.to_vec(),
+                            data_offsets: info.data_offsets,
+                        },
+                    )
+                })
+                .collect();
 
         Ok(Self {
             path: path.to_string_lossy().into_owned(),
-            data_start: 8 + header_len,
-            tensors,
+            data_start: 8 + header_size as u64,
+            tensors: tensors,
             mmap,
         })
     }

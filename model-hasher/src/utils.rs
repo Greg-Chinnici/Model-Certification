@@ -12,6 +12,6 @@ pub fn derive_seed(
 }
 
 /// Load model shards from paths and autodetect format
-pub fn load_model_shards(paths: &[PathBuf]) -> anyhow::Result<Vec<Box<dyn ModelShard>>> {
+pub fn load_model_shards(paths: Vec<PathBuf>) -> anyhow::Result<Vec<Box<dyn ModelShard>>> {
     unimplemented!()
 }
