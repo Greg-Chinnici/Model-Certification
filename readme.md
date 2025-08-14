@@ -39,7 +39,7 @@ All downloading, file management, and database storage are handled by Python. Ru
 |-------|-----------------------|--------|---------|-------------|
 | `-s`  | `--salt`               | String | `""`    | Salt to use for hashing. Recommended at least 16 characters of hex. |
 | `-d`  | `--dev-key-thumbprint` | String | `""`    | Dev key thumbprint to include in hashing (from certificate). |
-| `-v`  | `--version`            | String | `""`    | Version string to include in hashing. |
+| `-v`  | `--model-version`      | String | `""`    | Version string to include in hashing. |
 | `-r`  | `--release-date`       | String | `""`    | Release date to use for hashing (UTC). |
 
 ---
