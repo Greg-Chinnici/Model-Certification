@@ -1,9 +1,9 @@
-use crate::modelshard::ModelShard;
+use crate::modelshard::{ModelShard, TensorMeta};
 use anyhow::Result;
 
 /// Fingerprint a collection of shards using PRNG sampling
 pub fn fingerprint_shards(
-    shards: Vec<Box<dyn ModelShard>>,
+    tensors: Vec<TensorMeta>,
     seed: [u8; 32],
     stride: usize,
     span: usize,

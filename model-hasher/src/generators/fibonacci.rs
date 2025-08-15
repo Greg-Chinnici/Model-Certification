@@ -1,8 +1,9 @@
 pub struct Fibonacci {
-    current: u128,
-    next: u128 ,
+    current: u64,
+    next: u64 ,
 
     offset: u32,
+    when_to_wrap: u64
     // Lucas Numbers (custom base)
     //base_current: u128,
     //base_next: u128
@@ -12,7 +13,8 @@ impl Fibonacci {
         Fibonacci{
             current: 0,
             next: 1,
-            offset: offset
+            offset: offset,
+            when_to_wrap: 2^20 // max possible value
         }
     }
     pub fn reset(&mut self){
@@ -27,13 +29,15 @@ impl Default for Fibonacci {
     }
 }
 impl Iterator for Fibonacci {
-    type Item = u128;
+    type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item>{
-        let new_next = self.current.saturating_add(self.next);
+        let mut new_next = self.current.saturating_add(self.next);
+        if new_next >= self.when_to_wrap {self.reset(); new_next=self.current+self.next}
+
         self.current = self.next;
         self.next = new_next;
 
-        Some(self.current + self.offset as u128)
+        Some(self.current + self.offset as u64)
     }
 }

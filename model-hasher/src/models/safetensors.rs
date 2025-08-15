@@ -1,12 +1,12 @@
 use crate::modelshard::{ModelShard , TensorMeta};
-use crate::generators::{fibonacci::Fibonacci};
+use crate::generators::{fibonacci::Fibonacci , stride::Stride};
 
 use anyhow::Result;
 use std::{fs::File, path::Path};
 use memmap2::Mmap;
 use safetensors::{self, SafeTensors, tensor::Metadata , tensor::Dtype};
 
-// Use BTree so it can keep order, without needing to resort after read in
+// Use BTreeMap so it can keep order, without needing to resort after read in
 // normal hashmaps dont guarentee order
 use std::collections::BTreeMap;
 
@@ -46,10 +46,10 @@ impl ModelShard for SafetensorsShard {
                 .tensors()
                 .iter()
                 .map(|(name, info)| {
-                    //println!("Tensor: {}", name);
-                    //println!("  dtype: {:?}", info.dtype);
-                    //println!("  shape: {:?}", info.shape);
-                    //println!("  data_offsets: {:?}", info.data_offsets);
+                    println!("Tensor: {}", name);
+                    println!("  dtype: {:?}", info.dtype);
+                    println!("  shape: {:?}", info.shape);
+                    println!("  data_offsets: {:?}", info.data_offsets);
                     (
                         name.clone(),
                         TensorMeta {
@@ -77,9 +77,16 @@ impl ModelShard for SafetensorsShard {
         })
     }
 
-    //fn read_tensor_bytes(&self, idx: usize, offset: usize, length: usize) -> Result<Vec<u8>> {
-    //    unimplemented!()
-    //}
+    fn read_tensor_bytes(meta: TensorMeta, span_n:usize , span_w:usize) -> anyhow::Result<()> {
+        // calc the total size of Tensor
+        // if stride is not given, then use a generator sequence
+        // read in bytes of len span_w
+        let total_size:u64 = dtype_size_bytes(meta.dtype).unwrap() as u64 * meta.shape.iter().product() as u64;
+        //  select the correct iterator implemtation if no good stride_n
+
+
+        Ok(())
+    }
 
     fn tensors(&self) -> &[TensorMeta]{unimplemented!()}
     /// Absolute offset of the shard's data section start

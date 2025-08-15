@@ -19,6 +19,7 @@ pub trait ModelShard {
 
     /// Absolute offset of the shard's data section start
     fn data_section_start(&self) -> u64;
+    fn read_tensor_bytes(meta: TensorMeta, span_n:usize , span_w:usize) -> anyhow::Result<()>;
 
     fn mmap(&self) -> Result<&memmap2::Mmap>;
 }

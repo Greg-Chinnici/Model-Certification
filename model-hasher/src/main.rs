@@ -43,7 +43,7 @@ struct Cli {
     #[arg(long="config-file")]
     config_file: Option<String>,
 
-    #[arg(long)] // all the parameters as above but in a json file
+    #[arg(short='o', long="output")] // all the parameters as above but in a json file
     output_file: Option<String>,
 }
 #[derive(Debug, Deserialize)]
